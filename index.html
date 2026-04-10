@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendIQ — Attendance Crisis Management</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Background Blobs -->
+    <div class="bg-blobs" aria-hidden="true">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav-glass fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-3 flex items-center justify-between"
+        role="navigation" aria-label="Main navigation">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                style="background: linear-gradient(135deg, var(--accent), #00886b);">
+                <i data-lucide="shield-check" class="w-4 h-4" style="color: var(--bg);"></i>
+            </div>
+            <span class="font-bold text-sm tracking-tight"
+                style="font-family:'Space Grotesk',sans-serif;">AttendIQ</span>
+        </div>
+        <div class="nav-links flex items-center gap-1">
+            <a href="#dashboard" class="nav-link active" data-nav>Dashboard</a>
+            <a href="#subjects" class="nav-link" data-nav>Subjects</a>
+            <a href="#planner" class="nav-link" data-nav>Planner</a>
+            <a href="#timetable-section" class="nav-link" data-nav>Timetable</a>
+            <a href="#analytics" class="nav-link" data-nav>Analytics</a>
+            <a href="#leave" class="nav-link" data-nav>Leave</a>
+        </div>
+        <div class="flex items-center gap-3">
+            <button class="nav-mobile-toggle w-9 h-9 rounded-lg flex items-center justify-center"
+                style="border:1px solid var(--border); background: var(--card);" onclick="toggleMobileMenu()"
+                aria-label="Toggle menu">
+                <i data-lucide="menu" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                    style="background: linear-gradient(135deg, var(--accent), #00886b); color: var(--bg);">AS</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="nav-mobile-menu fixed top-16 left-4 right-4 z-40 flex-col gap-1 p-3 rounded-2xl"
+        style="background: rgba(6,11,20,0.95); backdrop-filter: blur(30px); border: 1px solid var(--border); display: none;">
+        <a href="#dashboard" class="nav-link" data-nav onclick="closeMobileMenu()">Dashboard</a>
+        <a href="#subjects" class="nav-link" data-nav onclick="closeMobileMenu()">Subjects</a>
+        <a href="#planner" class="nav-link" data-nav onclick="closeMobileMenu()">Planner</a>
+        <a href="#timetable-section" class="nav-link" data-nav onclick="closeMobileMenu()">Timetable</a>
+        <a href="#analytics" class="nav-link" data-nav onclick="closeMobileMenu()">Analytics</a>
+        <a href="#leave" class="nav-link" data-nav onclick="closeMobileMenu()">Leave</a>
+    </div>
+
+    <!-- Main Content -->
+    <main class="relative z-10 pt-20 pb-16 px-4 md:px-8 max-w-7xl mx-auto">
+
+        <!-- SECTION: Dashboard Overview -->
+        <section id="dashboard" class="mb-12 reveal-item">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color: var(--muted);">Welcome
+                        back</p>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight"
+                        style="font-family:'Space Grotesk',sans-serif;">Arjun Sharma</h1>
+                    <p class="text-sm mt-1" style="color: var(--muted);">BT23CSE042 — Biotechnology, Semester 6</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="streak-badge">
+                        <i data-lucide="flame" class="w-4 h-4"></i>
+                        <span id="streakCount">5 day streak</span>
+                    </div>
+                    <div id="overallStatusBadge" class="badge"></div>
+                </div>
+            </div>
+
+            <!-- Alert Strip -->
+            <div id="alertStrip" class="alert-strip rounded-xl px-5 py-3 mb-6 flex items-center gap-3">
+                <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0" style="color: var(--warning);"></i>
+                <p id="alertMessage" class="text-sm font-medium"></p>
+            </div>
+
+            <!-- Core Metrics -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6" id="metricsGrid">
+                <!-- Filled by JS -->
+            </div>
+
+            <!-- Health Score + Quick Insights -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass p-6 flex flex-col items-center justify-center text-center">
+                    <p class="text-xs font-semibold uppercase tracking-widest mb-4" style="color: var(--muted);">
+                        Attendance Health Score</p>
+                    <div class="health-ring-container">
+                        <svg width="130" height="130" class="circ-prog">
+                            <circle class="circ-bg" cx="65" cy="65" r="55" stroke-width="10" />
+                            <circle id="healthRing" class="circ-fill" cx="65" cy="65" r="55" stroke-width="10"
+                                stroke-dasharray="345.58" stroke-dashoffset="345.58" />
+                        </svg>
+                        <div class="health-ring-label">
+                            <span id="healthScoreValue" class="text-2xl font-bold"
+                                style="font-family:'Space Grotesk',sans-serif;">0</span>
+                            <span class="text-xs block" style="color: var(--muted);">/100</span>
+                        </div>
+                    </div>
+                    <p id="healthLabel" class="text-sm font-semibold mt-3"></p>
+                </div>
+                <div class="glass p-6 md:col-span-2">
+                    <p class="text-xs font-semibold uppercase tracking-widest mb-4" style="color: var(--muted);">
+                        Strategic Insights</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="insightsGrid">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Subject-Wise Attendance -->
+        <section id="subjects" class="mb-12 reveal-item">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="section-title">Subject-Wise Attendance</h2>
+                    <p class="section-subtitle">Real-time class strength and your performance</p>
+                </div>
+                <button class="btn-secondary text-xs py-2 px-4" onclick="openInputModal()"
+                    aria-label="Update attendance data">
+                    <span class="flex items-center gap-2"><i data-lucide="pencil" class="w-3.5 h-3.5"></i> Update
+                        Data</span>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="subjectGrid">
+                <!-- Filled by JS -->
+            </div>
+        </section>
+
+        <!-- SECTION: Simulation & Planner -->
+        <section id="planner" class="mb-12 reveal-item">
+            <h2 class="section-title mb-1">Simulation Engine & Smart Planner</h2>
+            <p class="section-subtitle mb-5">Predict outcomes before making attendance decisions</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <!-- What If Simulation -->
+                <div class="glass p-6">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="zap" class="w-5 h-5" style="color: var(--warning);"></i>
+                        <h3 class="font-bold text-sm" style="font-family:'Space Grotesk',sans-serif;">What-If Simulator
+                        </h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <button class="sim-btn danger-btn" onclick="simulate('skip1')">
+                            <span class="flex items-center justify-center gap-2"><i data-lucide="x-circle"
+                                    class="w-4 h-4" style="color:var(--danger);"></i> Skip Tomorrow</span>
+                        </button>
+                        <button class="sim-btn safe-btn" onclick="simulate('attend1')">
+                            <span class="flex items-center justify-center gap-2"><i data-lucide="check-circle"
+                                    class="w-4 h-4" style="color:var(--safe);"></i> Attend Tomorrow</span>
+                        </button>
+                        <button class="sim-btn danger-btn" onclick="simulate('skip3')">
+                            <span class="flex items-center justify-center gap-2"><i data-lucide="x-circle"
+                                    class="w-4 h-4" style="color:var(--danger);"></i> Skip 3 Days</span>
+                        </button>
+                        <button class="sim-btn safe-btn" onclick="simulate('attendWeek')">
+                            <span class="flex items-center justify-center gap-2"><i data-lucide="check-circle"
+                                    class="w-4 h-4" style="color:var(--safe);"></i> Attend Full Week</span>
+                        </button>
+                    </div>
+                    <div id="simResult" class="glass-static p-4 text-center"
+                        style="min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <p class="text-sm" style="color: var(--muted);">Select a scenario to see the projected outcome
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Smart Calendar -->
+                <div class="glass p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-5 h-5" style="color: var(--info);"></i>
+                            <h3 class="font-bold text-sm" style="font-family:'Space Grotesk',sans-serif;">Smart Planner
+                            </h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="w-7 h-7 rounded-md flex items-center justify-center"
+                                style="border:1px solid var(--border); background: var(--card);"
+                                onclick="changeMonth(-1)" aria-label="Previous month"><i data-lucide="chevron-left"
+                                    class="w-3.5 h-3.5"></i></button>
+                            <span id="calMonthLabel" class="text-sm font-semibold min-w-[120px] text-center"></span>
+                            <button class="w-7 h-7 rounded-md flex items-center justify-center"
+                                style="border:1px solid var(--border); background: var(--card);"
+                                onclick="changeMonth(1)" aria-label="Next month"><i data-lucide="chevron-right"
+                                    class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Su</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Mo</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Tu</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">We</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Th</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Fr</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Sa</div>
+                    </div>
+                    <div id="calGrid" class="grid grid-cols-7 gap-1"></div>
+                    <div class="flex items-center gap-4 mt-3 text-xs" style="color: var(--muted);">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded"
+                                style="background: rgba(0,255,136,0.3);"></span> Present</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded"
+                                style="background: rgba(255,51,102,0.3);"></span> Absent</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded"
+                                style="border: 2px solid var(--info);"></span> Today</span>
+                        <span class="ml-auto">Click: Absent → Present → Clear</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projection from calendar -->
+            <div class="glass p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--muted);">
+                            Calendar-Based Projection</p>
+                        <p class="text-sm mt-1">Based on your marked attendance this month</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-center">
+                            <p class="text-xs" style="color:var(--muted);">Marked Present</p>
+                            <p id="calPresentCount" class="text-lg font-bold"
+                                style="font-family:'Space Grotesk',sans-serif; color:var(--safe);">0</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xs" style="color:var(--muted);">Marked Absent</p>
+                            <p id="calAbsentCount" class="text-lg font-bold"
+                                style="font-family:'Space Grotesk',sans-serif; color:var(--danger);">0</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xs" style="color:var(--muted);">Projected %</p>
+                            <p id="calProjected" class="text-lg font-bold"
+                                style="font-family:'Space Grotesk',sans-serif;">--</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Timetable -->
+        <section id="timetable-section" class="mb-12 reveal-item">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="section-title">Weekly Timetable</h2>
+                    <p class="section-subtitle">Real-time class tracking with attendance overlay</p>
+                </div>
+                <button id="ttToggle" class="btn-secondary text-xs py-2 px-4" onclick="toggleTimetable()"
+                    aria-label="Toggle timetable">
+                    <span class="flex items-center gap-2"><i data-lucide="eye" class="w-3.5 h-3.5"
+                            id="ttToggleIcon"></i> <span id="ttToggleText">Show Timetable</span></span>
+                </button>
+            </div>
+            <div id="ttContainer" class="tt-container">
+                <div class="overflow-x-auto pb-2">
+                    <div id="timetableGrid" class="min-w-[700px]">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Analytics -->
+        <section id="analytics" class="mb-12 reveal-item">
+            <h2 class="section-title mb-1">Detailed Analytics</h2>
+            <p class="section-subtitle mb-5">Deep dive into your attendance patterns and recovery roadmap</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <!-- Trend Chart -->
+                <div class="glass p-6">
+                    <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Weekly Attendance
+                        Trend</h3>
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+                <!-- Subject Comparison -->
+                <div class="glass p-6">
+                    <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Subject
+                        Comparison</h3>
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="subjectChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Analytics Table -->
+            <div class="glass p-6 overflow-x-auto">
+                <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Individual Subject
+                    Analysis</h3>
+                <table class="analytics-table" id="analyticsTable">
+                    <!-- Filled by JS -->
+                </table>
+            </div>
+
+            <!-- Badges Section -->
+            <div class="glass p-6 mt-4">
+                <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Achievement Badges
+                </h3>
+                <div id="badgesGrid" class="flex flex-wrap gap-3">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Leave Application -->
+        <section id="leave" class="mb-12 reveal-item">
+            <h2 class="section-title mb-1">Leave & Application System</h2>
+            <p class="section-subtitle mb-5">Apply for approved leave — not counted as absence</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Leave Form -->
+                <div class="glass p-6">
+                    <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Apply for Leave
+                    </h3>
+                    <form id="leaveForm" onsubmit="submitLeave(event)" novalidate>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="form-label" for="leaveFrom">From Date</label>
+                                <input type="date" id="leaveFrom" class="form-input" required>
+                            </div>
+                            <div>
+                                <label class="form-label" for="leaveTo">To Date</label>
+                                <input type="date" id="leaveTo" class="form-input" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label" for="leaveSubject">Subject (Optional)</label>
+                            <select id="leaveSubject" class="form-input">
+                                <option value="">All Subjects</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label" for="leaveReason">Reason</label>
+                            <textarea id="leaveReason" class="form-input"
+                                placeholder="Describe your reason for leave..." required></textarea>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label">Upload Proof (Optional)</label>
+                            <div class="file-upload" onclick="document.getElementById('leaveFile').click()">
+                                <i data-lucide="upload" class="w-5 h-5 mx-auto mb-1" style="color:var(--muted);"></i>
+                                <p class="text-xs" style="color:var(--muted);" id="fileLabel">Click to upload or drag a
+                                    file</p>
+                                <input type="file" id="leaveFile" class="hidden" accept=".pdf,.jpg,.png"
+                                    onchange="handleFileSelect(event)">
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="submit" class="btn-primary flex-1">Submit Application</button>
+                            <button type="button" class="btn-secondary" onclick="resetLeaveForm()">Clear</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Leave Status List -->
+                <div class="glass p-6">
+                    <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Application
+                        Status</h3>
+                    <div id="leaveList" class="space-y-3">
+                        <!-- Filled by JS -->
+                    </div>
+                    <div id="leaveEmpty" class="text-center py-8">
+                        <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2" style="color: var(--muted);"></i>
+                        <p class="text-sm" style="color: var(--muted);">No leave applications yet</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 border-t py-6 px-4 text-center" style="border-color: var(--border);">
+        <p class="text-xs" style="color: var(--muted);">AttendIQ — Intelligent Attendance Crisis Management System</p>
+    </footer>
+
+    <!-- User Input Modal -->
+    <div id="inputModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Update attendance data">
+        <div class="modal-content glass-static p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="font-bold text-sm" style="font-family:'Space Grotesk',sans-serif;">Update Attendance Data
+                </h3>
+                <button onclick="closeInputModal()" class="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style="border:1px solid var(--border);" aria-label="Close modal">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <form id="inputForm" onsubmit="submitInput(event)" novalidate>
+                <div class="mb-4">
+                    <label class="form-label" for="inputSubject">Subject</label>
+                    <select id="inputSubject" class="form-input" required></select>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label" for="inputAttended">Classes Attended</label>
+                        <input type="number" id="inputAttended" class="form-input" min="0" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="inputTotal">Total Classes</label>
+                        <input type="number" id="inputTotal" class="form-input" min="0" required>
+                    </div>
+                </div>
+                <div class="mb-5">
+                    <label class="form-label" for="inputPresent">Students Present Today</label>
+                    <input type="number" id="inputPresent" class="form-input" min="0" placeholder="Optional">
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit" class="btn-primary flex-1">Update</button>
+                    <button type="button" class="btn-secondary" onclick="closeInputModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Subject Detail Modal -->
+    <div id="subjectModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Subject details">
+        <div class="modal-content glass-static p-6 w-full max-w-lg mx-4" id="subjectModalContent">
+            <!-- Filled by JS -->
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
