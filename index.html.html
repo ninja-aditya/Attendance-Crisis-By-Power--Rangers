@@ -1,0 +1,2243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendIQ — Attendance Crisis Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #060b14;
+            --fg: #e4e8f0;
+            --muted: #5a6478;
+            --accent: #00ff88;
+            --card: rgba(255, 255, 255, 0.035);
+            --border: rgba(255, 255, 255, 0.07);
+            --safe: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff3366;
+            --info: #00c2ff;
+            --glass-blur: 20px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Background Blobs */
+        .bg-blobs {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.25;
+        }
+
+        .blob-1 {
+            width: 600px;
+            height: 600px;
+            background: #00ff88;
+            top: -200px;
+            left: -150px;
+            animation: blobFloat1 25s ease-in-out infinite;
+        }
+
+        .blob-2 {
+            width: 500px;
+            height: 500px;
+            background: #00886b;
+            bottom: -100px;
+            right: -100px;
+            animation: blobFloat2 30s ease-in-out infinite;
+        }
+
+        .blob-3 {
+            width: 400px;
+            height: 400px;
+            background: #005544;
+            top: 40%;
+            left: 50%;
+            animation: blobFloat3 20s ease-in-out infinite;
+        }
+
+        @keyframes blobFloat1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1)
+            }
+
+            33% {
+                transform: translate(80px, 60px) scale(1.1)
+            }
+
+            66% {
+                transform: translate(-40px, 100px) scale(0.95)
+            }
+        }
+
+        @keyframes blobFloat2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1)
+            }
+
+            50% {
+                transform: translate(-100px, -80px) scale(1.15)
+            }
+        }
+
+        @keyframes blobFloat3 {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1)
+            }
+
+            50% {
+                transform: translate(-40%, -60%) scale(1.1)
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .blob,
+            .reveal-item,
+            .pulse-ring {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        /* Glass Card */
+        .glass {
+            background: var(--card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+        }
+
+        .glass:hover {
+            transform: translateY(-2px) scale(1.005);
+            box-shadow: 0 8px 40px rgba(0, 255, 136, 0.06);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .glass-static {
+            background: var(--card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        /* Navigation */
+        .nav-glass {
+            background: rgba(6, 11, 20, 0.8);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-link {
+            position: relative;
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 8px;
+            transition: color 0.3s, background 0.3s;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--accent);
+            background: rgba(0, 255, 136, 0.06);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Progress Bar */
+        .progress-track {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            overflow: hidden;
+            height: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Circular Progress */
+        .circ-prog {
+            transform: rotate(-90deg);
+        }
+
+        .circ-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.06);
+        }
+
+        .circ-fill {
+            fill: none;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Status badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-safe {
+            background: rgba(0, 255, 136, 0.12);
+            color: var(--safe);
+        }
+
+        .badge-warning {
+            background: rgba(255, 170, 0, 0.12);
+            color: var(--warning);
+        }
+
+        .badge-danger {
+            background: rgba(255, 51, 102, 0.12);
+            color: var(--danger);
+        }
+
+        .badge-info {
+            background: rgba(0, 194, 255, 0.12);
+            color: var(--info);
+        }
+
+        .badge-pending {
+            background: rgba(255, 170, 0, 0.12);
+            color: var(--warning);
+        }
+
+        .badge-approved {
+            background: rgba(0, 255, 136, 0.12);
+            color: var(--safe);
+        }
+
+        .badge-rejected {
+            background: rgba(255, 51, 102, 0.12);
+            color: var(--danger);
+        }
+
+        /* Alert strip */
+        .alert-strip {
+            background: linear-gradient(90deg, rgba(255, 51, 102, 0.08), rgba(255, 170, 0, 0.08), rgba(0, 255, 136, 0.08));
+            border: 1px solid rgba(255, 170, 0, 0.15);
+            animation: alertPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes alertPulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.7
+            }
+        }
+
+        /* Simulation buttons */
+        .sim-btn {
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--fg);
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .sim-btn:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .sim-btn.danger-btn:hover {
+            border-color: var(--danger);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.1);
+        }
+
+        .sim-btn.safe-btn:hover {
+            border-color: var(--safe);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+        }
+
+        /* Calendar */
+        .cal-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s;
+            border: 1px solid transparent;
+            position: relative;
+        }
+
+        .cal-day:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .cal-day.present {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--safe);
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        .cal-day.absent {
+            background: rgba(255, 51, 102, 0.15);
+            color: var(--danger);
+            border-color: rgba(255, 51, 102, 0.3);
+        }
+
+        .cal-day.today {
+            box-shadow: 0 0 0 2px var(--info);
+        }
+
+        .cal-day.empty {
+            cursor: default;
+        }
+
+        /* Timetable */
+        .tt-slot {
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            border: 1px solid var(--border);
+            background: var(--card);
+            transition: all 0.3s;
+            cursor: default;
+            min-height: 60px;
+        }
+
+        .tt-slot.current {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+            background: rgba(0, 255, 136, 0.06);
+        }
+
+        .tt-slot.lunch {
+            background: rgba(255, 255, 255, 0.015);
+            border-style: dashed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+        }
+
+        /* Form elements */
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--fg);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.08);
+        }
+
+        .form-input::placeholder {
+            color: var(--muted);
+        }
+
+        select.form-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%235a6478' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+        select.form-input option {
+            background: #0e1525;
+            color: var(--fg);
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 6px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Primary button */
+        .btn-primary {
+            padding: 10px 24px;
+            border-radius: 10px;
+            border: none;
+            background: var(--accent);
+            color: #060b14;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            padding: 10px 24px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--fg);
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s;
+            opacity: 0;
+            max-width: 340px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            background: rgba(0, 255, 136, 0.12);
+            border-color: rgba(0, 255, 136, 0.2);
+            color: var(--safe);
+        }
+
+        .toast-error {
+            background: rgba(255, 51, 102, 0.12);
+            border-color: rgba(255, 51, 102, 0.2);
+            color: var(--danger);
+        }
+
+        .toast-info {
+            background: rgba(0, 194, 255, 0.12);
+            border-color: rgba(0, 194, 255, 0.2);
+            color: var(--info);
+        }
+
+        .toast-warning {
+            background: rgba(255, 170, 0, 0.12);
+            border-color: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+        }
+
+        /* Reveal animation */
+        .reveal-item {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+
+        .reveal-item.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Section title */
+        .section-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .section-subtitle {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Metric value */
+        .metric-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            line-height: 1.1;
+        }
+
+        /* Pulse ring for danger */
+        .pulse-ring {
+            position: relative;
+        }
+
+        .pulse-ring::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: inherit;
+            border: 2px solid var(--danger);
+            animation: pulseRing 2s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulseRing {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0.98)
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.02)
+            }
+        }
+
+        /* Timetable container transition */
+        .tt-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s;
+            opacity: 0;
+        }
+
+        .tt-container.open {
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        /* Glow text */
+        .glow-text {
+            background: linear-gradient(135deg, var(--accent), var(--info));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Subject card mini progress */
+        .mini-stat {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .mini-stat span {
+            color: var(--fg);
+            font-weight: 600;
+        }
+
+        /* Tab buttons */
+        .tab-btn {
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .tab-btn.active {
+            background: rgba(0, 255, 136, 0.08);
+            border-color: rgba(0, 255, 136, 0.2);
+            color: var(--accent);
+        }
+
+        /* Analytics table */
+        .analytics-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .analytics-table th {
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .analytics-table td {
+            padding: 12px 14px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .analytics-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Streak badge */
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(255, 170, 0, 0.12), rgba(255, 51, 102, 0.08));
+            border: 1px solid rgba(255, 170, 0, 0.15);
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--warning);
+        }
+
+        /* Health score ring */
+        .health-ring-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .health-ring-label {
+            position: absolute;
+            text-align: center;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            transform: scale(0.95) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .modal-overlay.open .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        /* File upload */
+        .file-upload {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent);
+            background: rgba(0, 255, 136, 0.03);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .metric-value {
+                font-size: 1.4rem;
+            }
+
+            .section-title {
+                font-size: 1.15rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .nav-mobile-toggle {
+                display: flex !important;
+            }
+
+            .nav-mobile-menu {
+                display: flex;
+            }
+
+            .toast-container {
+                bottom: 12px;
+                right: 12px;
+                left: 12px;
+            }
+
+            .toast {
+                max-width: 100%;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .nav-mobile-toggle {
+                display: none !important;
+            }
+
+            .nav-mobile-menu {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Background Blobs -->
+    <div class="bg-blobs" aria-hidden="true">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav-glass fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-3 flex items-center justify-between"
+        role="navigation" aria-label="Main navigation">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                style="background: linear-gradient(135deg, var(--accent), #00886b);">
+                <i data-lucide="shield-check" class="w-4 h-4" style="color: var(--bg);"></i>
+            </div>
+            <span class="font-bold text-sm tracking-tight"
+                style="font-family:'Space Grotesk',sans-serif;">AttendIQ</span>
+        </div>
+        <div class="nav-links flex items-center gap-1">
+            <a href="#dashboard" class="nav-link active" data-nav>Dashboard</a>
+            <a href="#subjects" class="nav-link" data-nav>Subjects</a>
+            <a href="#planner" class="nav-link" data-nav>Planner</a>
+            <a href="#timetable-section" class="nav-link" data-nav>Timetable</a>
+            <a href="#analytics" class="nav-link" data-nav>Analytics</a>
+            <a href="#leave" class="nav-link" data-nav>Leave</a>
+        </div>
+        <div class="flex items-center gap-3">
+            <button class="nav-mobile-toggle w-9 h-9 rounded-lg flex items-center justify-center"
+                style="border:1px solid var(--border); background: var(--card);" onclick="toggleMobileMenu()"
+                aria-label="Toggle menu">
+                <i data-lucide="menu" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                    style="background: linear-gradient(135deg, var(--accent), #00886b); color: var(--bg);">AS</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="nav-mobile-menu fixed top-16 left-4 right-4 z-40 flex-col gap-1 p-3 rounded-2xl"
+        style="background: rgba(6,11,20,0.95); backdrop-filter: blur(30px); border: 1px solid var(--border); display: none;">
+        <a href="#dashboard" class="nav-link" data-nav onclick="closeMobileMenu()">Dashboard</a>
+        <a href="#subjects" class="nav-link" data-nav onclick="closeMobileMenu()">Subjects</a>
+        <a href="#planner" class="nav-link" data-nav onclick="closeMobileMenu()">Planner</a>
+        <a href="#timetable-section" class="nav-link" data-nav onclick="closeMobileMenu()">Timetable</a>
+        <a href="#analytics" class="nav-link" data-nav onclick="closeMobileMenu()">Analytics</a>
+        <a href="#leave" class="nav-link" data-nav onclick="closeMobileMenu()">Leave</a>
+    </div>
+
+    <!-- Main Content -->
+    <main class="relative z-10 pt-20 pb-16 px-4 md:px-8 max-w-7xl mx-auto">
+
+        <!-- SECTION: Dashboard Overview -->
+        <section id="dashboard" class="mb-12 reveal-item">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color: var(--muted);">Welcome
+                        back</p>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight"
+                        style="font-family:'Space Grotesk',sans-serif;">Arjun Sharma</h1>
+                    <p class="text-sm mt-1" style="color: var(--muted);">BT23CSE042 — Biotechnology, Semester 6</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="streak-badge">
+                        <i data-lucide="flame" class="w-4 h-4"></i>
+                        <span id="streakCount">5 day streak</span>
+                    </div>
+                    <div id="overallStatusBadge" class="badge"></div>
+                </div>
+            </div>
+
+            <!-- Alert Strip -->
+            <div id="alertStrip" class="alert-strip rounded-xl px-5 py-3 mb-6 flex items-center gap-3">
+                <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0" style="color: var(--warning);"></i>
+                <p id="alertMessage" class="text-sm font-medium"></p>
+            </div>
+
+            <!-- Core Metrics -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6" id="metricsGrid">
+                <!-- Filled by JS -->
+            </div>
+
+            <!-- Health Score + Quick Insights -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass p-6 flex flex-col items-center justify-center text-center">
+                    <p class="text-xs font-semibold uppercase tracking-widest mb-4" style="color: var(--muted);">
+                        Attendance Health Score</p>
+                    <div class="health-ring-container">
+                        <svg width="130" height="130" class="circ-prog">
+                            <circle class="circ-bg" cx="65" cy="65" r="55" stroke-width="10" />
+                            <circle id="healthRing" class="circ-fill" cx="65" cy="65" r="55" stroke-width="10"
+                                stroke-dasharray="345.58" stroke-dashoffset="345.58" />
+                        </svg>
+                        <div class="health-ring-label">
+                            <span id="healthScoreValue" class="text-2xl font-bold"
+                                style="font-family:'Space Grotesk',sans-serif;">0</span>
+                            <span class="text-xs block" style="color: var(--muted);">/100</span>
+                        </div>
+                    </div>
+                    <p id="healthLabel" class="text-sm font-semibold mt-3"></p>
+                </div>
+                <div class="glass p-6 md:col-span-2">
+                    <p class="text-xs font-semibold uppercase tracking-widest mb-4" style="color: var(--muted);">
+                        Strategic Insights</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="insightsGrid">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Subject-Wise Attendance -->
+        <section id="subjects" class="mb-12 reveal-item">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="section-title">Subject-Wise Attendance</h2>
+                    <p class="section-subtitle">Real-time class strength and your performance</p>
+                </div>
+                <button class="btn-secondary text-xs py-2 px-4" onclick="openInputModal()"
+                    aria-label="Update attendance data">
+                    <span class="flex items-center gap-2"><i data-lucide="pencil" class="w-3.5 h-3.5"></i> Update
+                        Data</span>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="subjectGrid">
+                <!-- Filled by JS -->
+            </div>
+        </section>
+
+        <!-- SECTION: Simulation & Planner -->
+        <section id="planner" class="mb-12 reveal-item">
+            <h2 class="section-title mb-1">Simulation Engine & Smart Planner</h2>
+            <p class="section-subtitle mb-5">Predict outcomes before making attendance decisions</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <!-- What If Simulation -->
+                <div class="glass p-6">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="zap" class="w-5 h-5" style="color: var(--warning);"></i>
+                        <h3 class="font-bold text-sm" style="font-family:'Space Grotesk',sans-serif;">What-If Simulator
+                        </h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <button class="sim-btn danger-btn" onclick="simulate('skip1')">
+                            <span class="flex items-center justify-center gap-2"><i data-lucide="x-circle"
+                                    class="w-4 h-4" style="color:var(--danger);"></i> Skip Tomorrow</span>
+                        </button>
+                        <button class="sim-btn safe-btn" onclick="simulate('attend1')">
+                            <span class="flex items-center justify-center gap-2"><i data-lucide="check-circle"
+                                    class="w-4 h-4" style="color:var(--safe);"></i> Attend Tomorrow</span>
+                        </button>
+                        <button class="sim-btn danger-btn" onclick="simulate('skip3')">
+                            <span class="flex items-center justify-center gap-2"><i data-lucide="x-circle"
+                                    class="w-4 h-4" style="color:var(--danger);"></i> Skip 3 Days</span>
+                        </button>
+                        <button class="sim-btn safe-btn" onclick="simulate('attendWeek')">
+                            <span class="flex items-center justify-center gap-2"><i data-lucide="check-circle"
+                                    class="w-4 h-4" style="color:var(--safe);"></i> Attend Full Week</span>
+                        </button>
+                    </div>
+                    <div id="simResult" class="glass-static p-4 text-center"
+                        style="min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <p class="text-sm" style="color: var(--muted);">Select a scenario to see the projected outcome
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Smart Calendar -->
+                <div class="glass p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-5 h-5" style="color: var(--info);"></i>
+                            <h3 class="font-bold text-sm" style="font-family:'Space Grotesk',sans-serif;">Smart Planner
+                            </h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="w-7 h-7 rounded-md flex items-center justify-center"
+                                style="border:1px solid var(--border); background: var(--card);"
+                                onclick="changeMonth(-1)" aria-label="Previous month"><i data-lucide="chevron-left"
+                                    class="w-3.5 h-3.5"></i></button>
+                            <span id="calMonthLabel" class="text-sm font-semibold min-w-[120px] text-center"></span>
+                            <button class="w-7 h-7 rounded-md flex items-center justify-center"
+                                style="border:1px solid var(--border); background: var(--card);"
+                                onclick="changeMonth(1)" aria-label="Next month"><i data-lucide="chevron-right"
+                                    class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Su</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Mo</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Tu</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">We</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Th</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Fr</div>
+                        <div class="text-center text-xs font-semibold py-1" style="color:var(--muted);">Sa</div>
+                    </div>
+                    <div id="calGrid" class="grid grid-cols-7 gap-1"></div>
+                    <div class="flex items-center gap-4 mt-3 text-xs" style="color: var(--muted);">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded"
+                                style="background: rgba(0,255,136,0.3);"></span> Present</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded"
+                                style="background: rgba(255,51,102,0.3);"></span> Absent</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded"
+                                style="border: 2px solid var(--info);"></span> Today</span>
+                        <span class="ml-auto">Click: Absent → Present → Clear</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projection from calendar -->
+            <div class="glass p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--muted);">
+                            Calendar-Based Projection</p>
+                        <p class="text-sm mt-1">Based on your marked attendance this month</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-center">
+                            <p class="text-xs" style="color:var(--muted);">Marked Present</p>
+                            <p id="calPresentCount" class="text-lg font-bold"
+                                style="font-family:'Space Grotesk',sans-serif; color:var(--safe);">0</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xs" style="color:var(--muted);">Marked Absent</p>
+                            <p id="calAbsentCount" class="text-lg font-bold"
+                                style="font-family:'Space Grotesk',sans-serif; color:var(--danger);">0</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xs" style="color:var(--muted);">Projected %</p>
+                            <p id="calProjected" class="text-lg font-bold"
+                                style="font-family:'Space Grotesk',sans-serif;">--</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Timetable -->
+        <section id="timetable-section" class="mb-12 reveal-item">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="section-title">Weekly Timetable</h2>
+                    <p class="section-subtitle">Real-time class tracking with attendance overlay</p>
+                </div>
+                <button id="ttToggle" class="btn-secondary text-xs py-2 px-4" onclick="toggleTimetable()"
+                    aria-label="Toggle timetable">
+                    <span class="flex items-center gap-2"><i data-lucide="eye" class="w-3.5 h-3.5"
+                            id="ttToggleIcon"></i> <span id="ttToggleText">Show Timetable</span></span>
+                </button>
+            </div>
+            <div id="ttContainer" class="tt-container">
+                <div class="overflow-x-auto pb-2">
+                    <div id="timetableGrid" class="min-w-[700px]">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Analytics -->
+        <section id="analytics" class="mb-12 reveal-item">
+            <h2 class="section-title mb-1">Detailed Analytics</h2>
+            <p class="section-subtitle mb-5">Deep dive into your attendance patterns and recovery roadmap</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <!-- Trend Chart -->
+                <div class="glass p-6">
+                    <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Weekly Attendance
+                        Trend</h3>
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+                <!-- Subject Comparison -->
+                <div class="glass p-6">
+                    <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Subject
+                        Comparison</h3>
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="subjectChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Analytics Table -->
+            <div class="glass p-6 overflow-x-auto">
+                <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Individual Subject
+                    Analysis</h3>
+                <table class="analytics-table" id="analyticsTable">
+                    <!-- Filled by JS -->
+                </table>
+            </div>
+
+            <!-- Badges Section -->
+            <div class="glass p-6 mt-4">
+                <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Achievement Badges
+                </h3>
+                <div id="badgesGrid" class="flex flex-wrap gap-3">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: Leave Application -->
+        <section id="leave" class="mb-12 reveal-item">
+            <h2 class="section-title mb-1">Leave & Application System</h2>
+            <p class="section-subtitle mb-5">Apply for approved leave — not counted as absence</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Leave Form -->
+                <div class="glass p-6">
+                    <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Apply for Leave
+                    </h3>
+                    <form id="leaveForm" onsubmit="submitLeave(event)" novalidate>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="form-label" for="leaveFrom">From Date</label>
+                                <input type="date" id="leaveFrom" class="form-input" required>
+                            </div>
+                            <div>
+                                <label class="form-label" for="leaveTo">To Date</label>
+                                <input type="date" id="leaveTo" class="form-input" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label" for="leaveSubject">Subject (Optional)</label>
+                            <select id="leaveSubject" class="form-input">
+                                <option value="">All Subjects</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label" for="leaveReason">Reason</label>
+                            <textarea id="leaveReason" class="form-input"
+                                placeholder="Describe your reason for leave..." required></textarea>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label">Upload Proof (Optional)</label>
+                            <div class="file-upload" onclick="document.getElementById('leaveFile').click()">
+                                <i data-lucide="upload" class="w-5 h-5 mx-auto mb-1" style="color:var(--muted);"></i>
+                                <p class="text-xs" style="color:var(--muted);" id="fileLabel">Click to upload or drag a
+                                    file</p>
+                                <input type="file" id="leaveFile" class="hidden" accept=".pdf,.jpg,.png"
+                                    onchange="handleFileSelect(event)">
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="submit" class="btn-primary flex-1">Submit Application</button>
+                            <button type="button" class="btn-secondary" onclick="resetLeaveForm()">Clear</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Leave Status List -->
+                <div class="glass p-6">
+                    <h3 class="text-sm font-bold mb-4" style="font-family:'Space Grotesk',sans-serif;">Application
+                        Status</h3>
+                    <div id="leaveList" class="space-y-3">
+                        <!-- Filled by JS -->
+                    </div>
+                    <div id="leaveEmpty" class="text-center py-8">
+                        <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2" style="color: var(--muted);"></i>
+                        <p class="text-sm" style="color: var(--muted);">No leave applications yet</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 border-t py-6 px-4 text-center" style="border-color: var(--border);">
+        <p class="text-xs" style="color: var(--muted);">AttendIQ — Intelligent Attendance Crisis Management System</p>
+    </footer>
+
+    <!-- User Input Modal -->
+    <div id="inputModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Update attendance data">
+        <div class="modal-content glass-static p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="font-bold text-sm" style="font-family:'Space Grotesk',sans-serif;">Update Attendance Data
+                </h3>
+                <button onclick="closeInputModal()" class="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style="border:1px solid var(--border);" aria-label="Close modal">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <form id="inputForm" onsubmit="submitInput(event)" novalidate>
+                <div class="mb-4">
+                    <label class="form-label" for="inputSubject">Subject</label>
+                    <select id="inputSubject" class="form-input" required></select>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label" for="inputAttended">Classes Attended</label>
+                        <input type="number" id="inputAttended" class="form-input" min="0" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="inputTotal">Total Classes</label>
+                        <input type="number" id="inputTotal" class="form-input" min="0" required>
+                    </div>
+                </div>
+                <div class="mb-5">
+                    <label class="form-label" for="inputPresent">Students Present Today</label>
+                    <input type="number" id="inputPresent" class="form-input" min="0" placeholder="Optional">
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit" class="btn-primary flex-1">Update</button>
+                    <button type="button" class="btn-secondary" onclick="closeInputModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Subject Detail Modal -->
+    <div id="subjectModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Subject details">
+        <div class="modal-content glass-static p-6 w-full max-w-lg mx-4" id="subjectModalContent">
+            <!-- Filled by JS -->
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <script>
+        // ============================================================
+        // DATA & STATE
+        // ============================================================
+        const MIN_THRESHOLD = 75;
+        const GOOD_THRESHOLD = 90;
+
+        const state = {
+            student: { name: 'Arjun Sharma', id: 'BT23CSE042' },
+            subjects: [
+                { name: 'Biotechnology', faculty: 'Dr. Priya Mehta', type: 'Theory', total: 45, attended: 38, studentsPresent: 42, totalStudents: 60 },
+                { name: 'Immunology Lab', faculty: 'Dr. Priya Mehta', type: 'Lab', total: 20, attended: 17, studentsPresent: 18, totalStudents: 20 },
+                { name: 'Molecular Biology', faculty: 'Dr. Rakesh Kumar', type: 'Theory', total: 42, attended: 31, studentsPresent: 39, totalStudents: 58 },
+                { name: 'Genetics', faculty: 'Dr. Anita Desai', type: 'Theory', total: 40, attended: 36, studentsPresent: 48, totalStudents: 55 },
+                { name: 'Biochemistry', faculty: 'Dr. Vikram Singh', type: 'Theory', total: 38, attended: 25, studentsPresent: 35, totalStudents: 56 },
+                { name: 'Microbiology Lab', faculty: 'Dr. Sunita Rao', type: 'Lab', total: 18, attended: 15, studentsPresent: 17, totalStudents: 22 }
+            ],
+            leaves: [
+                { id: 1, from: '2025-06-10', to: '2025-06-11', subject: 'All Subjects', reason: 'Medical appointment for follow-up checkup', status: 'approved', file: 'medical_receipt.pdf' },
+                { id: 2, from: '2025-06-20', to: '2025-06-20', subject: 'Biochemistry', reason: 'Family emergency — had to travel home', status: 'pending', file: null }
+            ],
+            calendar: {},
+            calendarMonth: new Date().getMonth(),
+            calendarYear: new Date().getFullYear(),
+            streak: 5,
+            weeklyTrend: [76.2, 77.8, 78.1, 79.0, 78.5, 79.8, 79.8, 79.8],
+            nextLeaveId: 3
+        };
+
+        // Pre-populate some calendar data for the current month
+        (function initCalendar() {
+            const now = new Date();
+            const y = now.getFullYear(), m = now.getMonth();
+            const today = now.getDate();
+            for (let d = 1; d < today && d <= 28; d++) {
+                const dt = new Date(y, m, d);
+                const dow = dt.getDay();
+                if (dow === 0 || dow === 6) continue; // weekends
+                if (d === 10 || d === 11) continue; // approved leave
+                // Random pattern: mostly present
+                state.calendar[`${y}-${m}-${d}`] = Math.random() > 0.2 ? 'present' : 'absent';
+            }
+            // Last 5 days are present (streak)
+            for (let d = Math.max(1, today - 4); d < today; d++) {
+                state.calendar[`${y}-${m}-${d}`] = 'present';
+            }
+        })();
+
+        // Timetable data
+        const timetable = {
+            slots: ['9:10 AM', '10:10 AM', '11:10 AM', '12:10 PM', '1:10 PM', '2:10 PM'],
+            days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            data: {
+                Monday: [
+                    { subject: 'Biotechnology', faculty: 'Dr. Priya Mehta', type: 'Theory' },
+                    { subject: 'Molecular Biology', faculty: 'Dr. Rakesh Kumar', type: 'Theory' },
+                    { subject: 'Genetics', faculty: 'Dr. Anita Desai', type: 'Theory' },
+                    { subject: 'Lunch Break', type: 'lunch' },
+                    { subject: 'Biochemistry', faculty: 'Dr. Vikram Singh', type: 'Theory' },
+                    { subject: 'Microbiology Lab', faculty: 'Dr. Sunita Rao', type: 'Lab' }
+                ],
+                Tuesday: [
+                    { subject: 'Immunology Lab', faculty: 'Dr. Priya Mehta', type: 'Lab' },
+                    { subject: '', type: 'free' },
+                    { subject: 'Genetics', faculty: 'Dr. Anita Desai', type: 'Theory' },
+                    { subject: 'Lunch Break', type: 'lunch' },
+                    { subject: 'Biotechnology', faculty: 'Dr. Priya Mehta', type: 'Theory' },
+                    { subject: 'Molecular Biology', faculty: 'Dr. Rakesh Kumar', type: 'Theory' }
+                ],
+                Wednesday: [
+                    { subject: 'Biochemistry', faculty: 'Dr. Vikram Singh', type: 'Theory' },
+                    { subject: 'Biotechnology', faculty: 'Dr. Priya Mehta', type: 'Theory' },
+                    { subject: 'Microbiology Lab', faculty: 'Dr. Sunita Rao', type: 'Lab' },
+                    { subject: 'Lunch Break', type: 'lunch' },
+                    { subject: 'Genetics', faculty: 'Dr. Anita Desai', type: 'Theory' },
+                    { subject: 'Molecular Biology', faculty: 'Dr. Rakesh Kumar', type: 'Theory' }
+                ],
+                Thursday: [
+                    { subject: 'Immunology Lab', faculty: 'Dr. Priya Mehta', type: 'Lab' },
+                    { subject: '', type: 'free' },
+                    { subject: 'Biochemistry', faculty: 'Dr. Vikram Singh', type: 'Theory' },
+                    { subject: 'Lunch Break', type: 'lunch' },
+                    { subject: 'Biotechnology', faculty: 'Dr. Priya Mehta', type: 'Theory' },
+                    { subject: 'Genetics', faculty: 'Dr. Anita Desai', type: 'Theory' }
+                ],
+                Friday: [
+                    { subject: 'Molecular Biology', faculty: 'Dr. Rakesh Kumar', type: 'Theory' },
+                    { subject: 'Genetics', faculty: 'Dr. Anita Desai', type: 'Theory' },
+                    { subject: 'Biochemistry', faculty: 'Dr. Vikram Singh', type: 'Theory' },
+                    { subject: 'Lunch Break', type: 'lunch' },
+                    { subject: 'Biotechnology', faculty: 'Dr. Priya Mehta', type: 'Theory' },
+                    { subject: 'Microbiology Lab', faculty: 'Dr. Sunita Rao', type: 'Lab' }
+                ]
+            }
+        };
+
+        // ============================================================
+        // UTILITY FUNCTIONS
+        // ============================================================
+
+        function getSubjectPct(s) { return s.total > 0 ? (s.attended / s.total) * 100 : 0; }
+
+        function getOverall() {
+            const t = state.subjects.reduce((a, s) => a + s.total, 0);
+            const a = state.subjects.reduce((a, s) => a + s.attended, 0);
+            return t > 0 ? (a / t) * 100 : 0;
+        }
+
+        function getStatus(pct) {
+            if (pct >= GOOD_THRESHOLD) return { label: 'EXCELLENT', cls: 'badge-safe', color: 'var(--safe)' };
+            if (pct >= MIN_THRESHOLD) return { label: 'SAFE', cls: 'badge-warning', color: 'var(--warning)' };
+            return { label: 'DANGER', cls: 'badge-danger', color: 'var(--danger)' };
+        }
+
+        function pctColor(pct) {
+            if (pct >= GOOD_THRESHOLD) return 'var(--safe)';
+            if (pct >= MIN_THRESHOLD) return 'var(--warning)';
+            return 'var(--danger)';
+        }
+
+        function burnRate(s) {
+            if (s.total === 0) return 0;
+            const curr = getSubjectPct(s);
+            return curr - (s.attended / (s.total + 1)) * 100;
+        }
+
+        function recoveryRate(s) {
+            if (s.total === 0) return 0;
+            const curr = getSubjectPct(s);
+            return ((s.attended + 1) / (s.total + 1)) * 100 - curr;
+        }
+
+        function safeBunks(s, threshold = MIN_THRESHOLD) {
+            // How many classes can be missed while staying above threshold
+            let m = 0;
+            while ((s.attended / (s.total + m)) * 100 >= threshold) m++;
+            return Math.max(0, m - 1);
+        }
+
+        function classesToReach(s, target) {
+            if (getSubjectPct(s) >= target) return 0;
+            // Need to find minimum x such that (attended+x)/(total+x) >= target/100
+            // attended+x >= target/100 * (total+x)
+            // attended + x >= target*total/100 + target*x/100
+            // x - target*x/100 >= target*total/100 - attended
+            // x*(1 - target/100) >= target*total/100 - attended
+            // x >= (target*total/100 - attended) / (1 - target/100)
+            const num = (target * s.total / 100) - s.attended;
+            const den = 1 - target / 100;
+            return den > 0 ? Math.ceil(num / den) : Infinity;
+        }
+
+        function healthScore() {
+            const overall = getOverall();
+            // Attendance weight (40%)
+            const attScore = Math.min(overall / 100, 1) * 40;
+            // Trend weight (20%) — based on last 3 weeks
+            const trend = state.weeklyTrend;
+            const trendScore = trend.length >= 3 && trend[trend.length - 1] >= trend[trend.length - 3] ? 20 : 10;
+            // Buffer weight (20%)
+            const bufferScore = Math.min(Math.max(overall - MIN_THRESHOLD, 0) / 25, 1) * 20;
+            // Streak weight (10%)
+            const streakScore = Math.min(state.streak / 7, 1) * 10;
+            // Subject diversity (10%) — no subject critically low
+            const allAbove = state.subjects.every(s => getSubjectPct(s) >= MIN_THRESHOLD);
+            const divScore = allAbove ? 10 : state.subjects.filter(s => getSubjectPct(s) >= MIN_THRESHOLD).length / state.subjects.length * 10;
+            return Math.round(attScore + trendScore + bufferScore + streakScore + divScore);
+        }
+
+        function getAlertMessage() {
+            const overall = getOverall();
+            const dangerSubjects = state.subjects.filter(s => getSubjectPct(s) < MIN_THRESHOLD);
+            const warningSubjects = state.subjects.filter(s => getSubjectPct(s) >= MIN_THRESHOLD && getSubjectPct(s) < GOOD_THRESHOLD);
+            if (dangerSubjects.length > 0) return `Critical: ${dangerSubjects.map(s => s.name).join(', ')} ${dangerSubjects.length > 1 ? 'are' : 'is'} below ${MIN_THRESHOLD}%. Immediate action required.`;
+            if (warningSubjects.length >= 2) return `Be careful — ${warningSubjects.length} subjects are in the warning zone. Every class matters this week.`;
+            if (overall < GOOD_THRESHOLD && overall >= MIN_THRESHOLD) {
+                const totalBunks = state.subjects.reduce((a, s) => a + safeBunks(s), 0);
+                return `You can safely skip ${totalBunks} class${totalBunks !== 1 ? 'es' : ''} across all subjects combined. Stay alert.`;
+            }
+            if (overall >= GOOD_THRESHOLD) {
+                const totalBunks = state.subjects.reduce((a, s) => a + safeBunks(s, GOOD_THRESHOLD), 0);
+                return `Strong attendance! You have ${totalBunks} safe bunk${totalBunks !== 1 ? 's' : ''} remaining at 90% threshold.`;
+            }
+            return 'Monitor your attendance regularly to avoid shortage.';
+        }
+
+        // ============================================================
+        // RENDER FUNCTIONS
+        // ============================================================
+
+        function renderAll() {
+            renderMetrics();
+            renderAlert();
+            renderHealthScore();
+            renderInsights();
+            renderSubjects();
+            renderCalendar();
+            renderCalendarProjection();
+            renderTimetable();
+            renderAnalyticsTable();
+            renderBadges();
+            renderLeaveList();
+            populateSubjectSelects();
+            updateCharts();
+        }
+
+        function renderMetrics() {
+            const overall = getOverall();
+            const status = getStatus(overall);
+            const totalAttended = state.subjects.reduce((a, s) => a + s.attended, 0);
+            const totalMissed = state.subjects.reduce((a, s) => a + (s.total - s.attended), 0);
+            const totalBunks = state.subjects.reduce((a, s) => a + safeBunks(s), 0);
+            const riskIndex = Math.round(state.subjects.filter(s => getSubjectPct(s) < MIN_THRESHOLD).length / state.subjects.length * 100);
+
+            // Overall status badge in header
+            document.getElementById('overallStatusBadge').className = `badge ${status.cls}`;
+            document.getElementById('overallStatusBadge').textContent = status.label;
+
+            const metrics = [
+                { label: 'Overall Attendance', value: overall.toFixed(1) + '%', icon: 'percent', color: status.color },
+                { label: 'Classes Attended', value: totalAttended, icon: 'check-circle', color: 'var(--safe)' },
+                { label: 'Classes Missed', value: totalMissed, icon: 'x-circle', color: totalMissed > 30 ? 'var(--danger)' : 'var(--warning)' },
+                { label: 'Safe Bunks Left', value: totalBunks, icon: 'shield', color: totalBunks > 5 ? 'var(--safe)' : 'var(--danger)' },
+                { label: 'Risk Index', value: riskIndex + '%', icon: 'alert-triangle', color: riskIndex > 30 ? 'var(--danger)' : riskIndex > 0 ? 'var(--warning)' : 'var(--safe)' }
+            ];
+
+            document.getElementById('metricsGrid').innerHTML = metrics.map(m => `
+    <div class="glass p-5 ${m.label === 'Risk Index' && riskIndex > 30 ? 'pulse-ring' : ''}">
+      <div class="flex items-center gap-2 mb-3">
+        <i data-lucide="${m.icon}" class="w-4 h-4" style="color: ${m.color};"></i>
+        <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--muted);">${m.label}</span>
+      </div>
+      <p class="metric-value" style="color: ${m.color};">${m.value}</p>
+    </div>
+  `).join('');
+        }
+
+        function renderAlert() {
+            document.getElementById('alertMessage').textContent = getAlertMessage();
+        }
+
+        function renderHealthScore() {
+            const score = healthScore();
+            const circumference = 2 * Math.PI * 55;
+            const offset = circumference * (1 - score / 100);
+            const ring = document.getElementById('healthRing');
+            ring.style.stroke = score >= 80 ? 'var(--safe)' : score >= 60 ? 'var(--warning)' : 'var(--danger)';
+            ring.style.strokeDashoffset = offset;
+            document.getElementById('healthScoreValue').textContent = score;
+            document.getElementById('healthScoreValue').style.color = score >= 80 ? 'var(--safe)' : score >= 60 ? 'var(--warning)' : 'var(--danger)';
+            const label = score >= 90 ? 'Excellent Health' : score >= 75 ? 'Good Health' : score >= 50 ? 'Needs Attention' : 'Critical';
+            document.getElementById('healthLabel').textContent = label;
+            document.getElementById('healthLabel').style.color = score >= 80 ? 'var(--safe)' : score >= 60 ? 'var(--warning)' : 'var(--danger)';
+        }
+
+        function renderInsights() {
+            const overall = getOverall();
+            const totalAttended = state.subjects.reduce((a, s) => a + s.attended, 0);
+            const totalClasses = state.subjects.reduce((a, s) => a + s.total, 0);
+            const overallBurn = overall - (totalAttended / (totalClasses + 1)) * 100;
+            const overallRecovery = ((totalAttended + 1) / (totalClasses + 1)) * 100 - overall;
+            const buffer = Math.max(0, overall - MIN_THRESHOLD);
+
+            const insights = [
+                { label: 'Burn Rate', value: overallBurn.toFixed(2) + '%', desc: 'Drop per absence', icon: 'trending-down', color: 'var(--danger)' },
+                { label: 'Recovery Rate', value: overallRecovery.toFixed(2) + '%', desc: 'Gain per attendance', icon: 'trending-up', color: 'var(--safe)' },
+                { label: 'Buffer Zone', value: buffer.toFixed(1) + '%', desc: `Above ${MIN_THRESHOLD}% minimum`, icon: 'shield-check', color: buffer > 10 ? 'var(--safe)' : 'var(--warning)' }
+            ];
+
+            document.getElementById('insightsGrid').innerHTML = insights.map(ins => `
+    <div class="text-center p-3 rounded-xl" style="background: rgba(255,255,255,0.02);">
+      <i data-lucide="${ins.icon}" class="w-5 h-5 mx-auto mb-2" style="color: ${ins.color};"></i>
+      <p class="text-lg font-bold" style="font-family:'Space Grotesk',sans-serif; color: ${ins.color};">${ins.value}</p>
+      <p class="text-xs font-semibold mt-1" style="color: var(--muted);">${ins.label}</p>
+      <p class="text-xs" style="color: var(--muted); opacity: 0.7;">${ins.desc}</p>
+    </div>
+  `).join('');
+        }
+
+        function renderSubjects() {
+            const grid = document.getElementById('subjectGrid');
+            grid.innerHTML = state.subjects.map((s, i) => {
+                const pct = getSubjectPct(s);
+                const color = pctColor(pct);
+                const status = getStatus(pct);
+                const bunks = safeBunks(s);
+                const br = burnRate(s);
+                const rr = recoveryRate(s);
+                return `
+    <div class="glass p-5 cursor-pointer" onclick="openSubjectModal(${i})" role="button" tabindex="0" aria-label="View details for ${s.name}">
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex-1 min-w-0">
+          <h4 class="font-bold text-sm truncate" style="font-family:'Space Grotesk',sans-serif;">${s.name}</h4>
+          <p class="text-xs mt-0.5 truncate" style="color: var(--muted);">${s.faculty} — ${s.type}</p>
+        </div>
+        <span class="badge ${status.cls} ml-2 flex-shrink-0">${status.label}</span>
+      </div>
+      <div class="flex items-end justify-between mb-3">
+        <p class="text-2xl font-bold" style="font-family:'Space Grotesk',sans-serif; color: ${color};">${pct.toFixed(1)}%</p>
+        <div class="text-right">
+          <p class="mini-stat">Attended: <span>${s.attended}/${s.total}</span></p>
+          <p class="mini-stat">Safe bunks: <span style="color: ${bunks > 2 ? 'var(--safe)' : 'var(--danger)'};">${bunks}</span></p>
+        </div>
+      </div>
+      <div class="progress-track mb-3">
+        <div class="progress-fill" style="width: ${Math.min(pct, 100)}%; background: ${color};"></div>
+      </div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="mini-stat flex items-center gap-1"><i data-lucide="trending-down" class="w-3 h-3" style="color:var(--danger);"></i> -${br.toFixed(2)}%</span>
+          <span class="mini-stat flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3" style="color:var(--safe);"></i> +${rr.toFixed(2)}%</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-xs" style="color: var(--muted);">
+          <i data-lucide="users" class="w-3 h-3"></i>
+          <span>${s.studentsPresent}/${s.totalStudents}</span>
+        </div>
+      </div>
+    </div>`;
+            }).join('');
+        }
+
+        function renderCalendar() {
+            const y = state.calendarYear, m = state.calendarMonth;
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('calMonthLabel').textContent = monthNames[m] + ' ' + y;
+
+            const firstDay = new Date(y, m, 1).getDay();
+            const daysInMonth = new Date(y, m + 1, 0).getDate();
+            const today = new Date();
+            const isCurrentMonth = today.getFullYear() === y && today.getMonth() === m;
+
+            let html = '';
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="cal-day empty"></div>';
+            }
+            for (let d = 1; d <= daysInMonth; d++) {
+                const key = `${y}-${m}-${d}`;
+                const val = state.calendar[key] || null;
+                const isToday = isCurrentMonth && d === today.getDate();
+                let cls = 'cal-day';
+                if (val === 'present') cls += ' present';
+                else if (val === 'absent') cls += ' absent';
+                if (isToday) cls += ' today';
+                html += `<div class="${cls}" data-date="${key}" onclick="toggleCalDate('${key}')">${d}</div>`;
+            }
+            document.getElementById('calGrid').innerHTML = html;
+        }
+
+        function renderCalendarProjection() {
+            let present = 0, absent = 0;
+            const y = state.calendarYear, m = state.calendarMonth;
+            const daysInMonth = new Date(y, m + 1, 0).getDate();
+            for (let d = 1; d <= daysInMonth; d++) {
+                const val = state.calendar[`${y}-${m}-${d}`];
+                if (val === 'present') present++;
+                else if (val === 'absent') absent++;
+            }
+            document.getElementById('calPresentCount').textContent = present;
+            document.getElementById('calAbsentCount').textContent = absent;
+            const total = present + absent;
+            const projected = total > 0 ? (present / total * 100).toFixed(1) + '%' : '--';
+            const projEl = document.getElementById('calProjected');
+            projEl.textContent = projected;
+            if (total > 0) {
+                const p = present / total * 100;
+                projEl.style.color = pctColor(p);
+            }
+        }
+
+        function renderTimetable() {
+            const today = new Date();
+            const currentDay = timetable.days[today.getDay() === 0 ? 0 : today.getDay() - 1]; // map to Mon-Fri
+            const currentHour = today.getHours();
+            const currentMinute = today.getMinutes();
+            const currentTime = currentHour * 60 + currentMinute;
+
+            // Map slots to approximate minute values for highlighting
+            const slotTimes = [551, 611, 671, 731, 791, 851]; // 9:10=551, 10:10=611, etc.
+            let currentSlotIdx = -1;
+            if (timetable.days.includes(currentDay)) {
+                for (let i = slotTimes.length - 1; i >= 0; i--) {
+                    if (currentTime >= slotTimes[i] && currentTime < slotTimes[i] + 50) {
+                        currentSlotIdx = i;
+                        break;
+                    }
+                }
+            }
+
+            let html = '<div class="grid gap-2" style="grid-template-columns: 100px repeat(5, 1fr);">';
+            // Header row
+            html += '<div class="text-xs font-semibold p-2" style="color:var(--muted);">Time</div>';
+            timetable.days.forEach(day => {
+                const isToday = day === currentDay;
+                html += `<div class="text-xs font-semibold p-2 text-center rounded-lg ${isToday ? '' : ''}" style="color: ${isToday ? 'var(--accent)' : 'var(--muted)'}; ${isToday ? 'background: rgba(0,255,136,0.06);' : ''}">${day}${isToday ? ' (Today)' : ''}</div>`;
+            });
+
+            // Slot rows
+            timetable.slots.forEach((slot, si) => {
+                html += `<div class="text-xs font-medium p-2 flex items-center" style="color:var(--muted);">${slot}</div>`;
+                timetable.days.forEach(day => {
+                    const cell = timetable.data[day][si];
+                    const isCurrent = day === currentDay && si === currentSlotIdx;
+                    if (cell.type === 'lunch') {
+                        html += '<div class="tt-slot lunch"><span class="text-xs">Lunch Break</span></div>';
+                    } else if (cell.type === 'free') {
+                        html += '<div class="tt-slot" style="border-style: dashed; opacity: 0.4;"><span class="text-xs" style="color:var(--muted);">Free Period</span></div>';
+                    } else {
+                        const sub = state.subjects.find(s => s.name === cell.subject);
+                        const pct = sub ? getSubjectPct(sub).toFixed(1) : '--';
+                        const color = sub ? pctColor(getSubjectPct(sub)) : 'var(--muted)';
+                        html += `<div class="tt-slot ${isCurrent ? 'current' : ''}">
+          <p class="font-semibold text-xs mb-0.5" style="color: ${isCurrent ? 'var(--accent)' : 'var(--fg)'};">${cell.subject}</p>
+          <p class="text-xs" style="color: var(--muted); font-size: 0.65rem;">${cell.faculty}</p>
+          <p class="text-xs font-bold mt-1" style="color: ${color}; font-size: 0.7rem;">${pct}%</p>
+        </div>`;
+                    }
+                });
+            });
+            html += '</div>';
+            document.getElementById('timetableGrid').innerHTML = html;
+        }
+
+        function renderAnalyticsTable() {
+            const table = document.getElementById('analyticsTable');
+            let html = `<thead><tr>
+    <th>Subject</th>
+    <th>Attendance</th>
+    <th>Attended / Total</th>
+    <th>Safe Bunks</th>
+    <th>To Reach 75%</th>
+    <th>To Reach 90%</th>
+    <th>Burn Rate</th>
+  </tr></thead><tbody>`;
+
+            state.subjects.forEach(s => {
+                const pct = getSubjectPct(s);
+                const color = pctColor(pct);
+                const bunks = safeBunks(s);
+                const to75 = classesToReach(s, 75);
+                const to90 = classesToReach(s, 90);
+                const br = burnRate(s);
+                html += `<tr>
+      <td><span class="font-semibold">${s.name}</span></td>
+      <td><span class="font-bold" style="color:${color};">${pct.toFixed(1)}%</span></td>
+      <td>${s.attended} / ${s.total}</td>
+      <td><span style="color: ${bunks > 2 ? 'var(--safe)' : 'var(--danger)'}; font-weight: 600;">${bunks}</span></td>
+      <td>${to75 === 0 ? '<span style="color:var(--safe);">Achieved</span>' : to75 + ' classes'}</td>
+      <td>${to90 === 0 ? '<span style="color:var(--safe);">Achieved</span>' : to90 === Infinity ? '<span style="color:var(--danger);">Impossible</span>' : to90 + ' classes'}</td>
+      <td><span style="color:var(--danger);">-${br.toFixed(2)}%</span></td>
+    </tr>`;
+            });
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        function renderBadges() {
+            const overall = getOverall();
+            const badges = [
+                { name: 'Consistent', desc: '7+ day streak', icon: 'flame', earned: state.streak >= 7, color: 'var(--warning)' },
+                { name: 'Safe Player', desc: 'Never below 80%', icon: 'shield', earned: state.subjects.every(s => getSubjectPct(s) >= 80), color: 'var(--safe)' },
+                { name: 'Perfect Scholar', desc: '90%+ overall', icon: 'award', earned: overall >= 90, color: 'var(--accent)' },
+                { name: 'Recovery Hero', desc: 'Bounced back from danger', icon: 'heart-pulse', earned: state.weeklyTrend.length >= 3 && state.weeklyTrend[0] < 75 && state.weeklyTrend[state.weeklyTrend.length - 1] >= 80, color: 'var(--danger)' },
+                { name: 'Lab Expert', desc: '90%+ in all labs', icon: 'microscope', earned: state.subjects.filter(s => s.type === 'Lab').every(s => getSubjectPct(s) >= 90), color: 'var(--info)' },
+                { name: 'Half Century', desc: '50+ classes attended', icon: 'target', earned: state.subjects.reduce((a, s) => a + s.attended, 0) >= 50, color: '#c084fc' }
+            ];
+
+            document.getElementById('badgesGrid').innerHTML = badges.map(b => `
+    <div class="flex items-center gap-3 p-3 rounded-xl" style="background: rgba(255,255,255,0.02); border: 1px solid ${b.earned ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}; opacity: ${b.earned ? '1' : '0.35'};">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background: ${b.earned ? b.color.replace(')', ',0.12)').replace('var(', 'rgba(').replace('--safe', '0,255,136').replace('--warning', '255,170,0').replace('--danger', '255,51,102').replace('--accent', '0,255,136').replace('--info', '0,194,255') : 'rgba(255,255,255,0.04)'};">
+        <i data-lucide="${b.icon}" class="w-5 h-5" style="color: ${b.earned ? b.color : 'var(--muted)'};"></i>
+      </div>
+      <div>
+        <p class="text-xs font-bold">${b.name}</p>
+        <p class="text-xs" style="color: var(--muted);">${b.desc}</p>
+      </div>
+      ${b.earned ? '<i data-lucide="check-circle" class="w-4 h-4 ml-auto flex-shrink-0" style="color: var(--safe);"></i>' : '<i data-lucide="lock" class="w-4 h-4 ml-auto flex-shrink-0" style="color: var(--muted); opacity: 0.4;"></i>'}
+    </div>
+  `).join('');
+        }
+
+        function renderLeaveList() {
+            const list = document.getElementById('leaveList');
+            const empty = document.getElementById('leaveEmpty');
+            if (state.leaves.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+            list.innerHTML = state.leaves.map(l => {
+                const statusCls = l.status === 'approved' ? 'badge-approved' : l.status === 'rejected' ? 'badge-rejected' : 'badge-pending';
+                const statusLabel = l.status.charAt(0).toUpperCase() + l.status.slice(1);
+                return `
+    <div class="p-4 rounded-xl" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border);">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <p class="text-sm font-semibold">${l.subject}</p>
+          <p class="text-xs" style="color: var(--muted);">${formatDate(l.from)} — ${formatDate(l.to)}</p>
+        </div>
+        <span class="badge ${statusCls}">${statusLabel}</span>
+      </div>
+      <p class="text-xs mb-2" style="color: var(--muted);">${l.reason}</p>
+      ${l.file ? `<p class="text-xs flex items-center gap-1" style="color: var(--info);"><i data-lucide="paperclip" class="w-3 h-3"></i> ${l.file}</p>` : ''}
+    </div>`;
+            }).join('');
+        }
+
+        function populateSubjectSelects() {
+            const options = state.subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+            const leaveSelect = document.getElementById('leaveSubject');
+            const inputSelect = document.getElementById('inputSubject');
+            if (leaveSelect) leaveSelect.innerHTML = '<option value="">All Subjects</option>' + options;
+            if (inputSelect) inputSelect.innerHTML = options;
+        }
+
+        function formatDate(str) {
+            const d = new Date(str + 'T00:00:00');
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // ============================================================
+        // CHARTS
+        // ============================================================
+        let trendChart = null, subjectChart = null;
+
+        function initCharts() {
+            const ctx1 = document.getElementById('trendChart').getContext('2d');
+            const ctx2 = document.getElementById('subjectChart').getContext('2d');
+
+            const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'];
+
+            Chart.defaults.color = '#5a6478';
+            Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
+            Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+            trendChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: weeks,
+                    datasets: [{
+                        label: 'Attendance %',
+                        data: state.weeklyTrend,
+                        borderColor: '#00ff88',
+                        backgroundColor: 'rgba(0,255,136,0.08)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#00ff88',
+                        pointBorderColor: '#00ff88',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }, {
+                        label: '75% Threshold',
+                        data: Array(8).fill(75),
+                        borderColor: 'rgba(255,170,0,0.3)',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true, labels: { boxWidth: 12, padding: 16, font: { size: 11 } } } },
+                    scales: {
+                        y: { min: 60, max: 100, ticks: { callback: v => v + '%', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                        x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+                    }
+                }
+            });
+
+            subjectChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: state.subjects.map(s => s.name.length > 12 ? s.name.substring(0, 12) + '...' : s.name),
+                    datasets: [{
+                        label: 'Attendance %',
+                        data: state.subjects.map(s => getSubjectPct(s)),
+                        backgroundColor: state.subjects.map(s => {
+                            const p = getSubjectPct(s);
+                            return p >= 90 ? 'rgba(0,255,136,0.6)' : p >= 75 ? 'rgba(255,170,0,0.6)' : 'rgba(255,51,102,0.6)';
+                        }),
+                        borderColor: state.subjects.map(s => {
+                            const p = getSubjectPct(s);
+                            return p >= 90 ? '#00ff88' : p >= 75 ? '#ffaa00' : '#ff3366';
+                        }),
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { min: 0, max: 100, ticks: { callback: v => v + '%', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                        y: { ticks: { font: { size: 10 } }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            if (!trendChart || !subjectChart) return;
+            trendChart.data.datasets[0].data = state.weeklyTrend;
+            trendChart.update('none');
+            subjectChart.data.datasets[0].data = state.subjects.map(s => getSubjectPct(s));
+            subjectChart.data.datasets[0].backgroundColor = state.subjects.map(s => {
+                const p = getSubjectPct(s);
+                return p >= 90 ? 'rgba(0,255,136,0.6)' : p >= 75 ? 'rgba(255,170,0,0.6)' : 'rgba(255,51,102,0.6)';
+            });
+            subjectChart.data.datasets[0].borderColor = state.subjects.map(s => {
+                const p = getSubjectPct(s);
+                return p >= 90 ? '#00ff88' : p >= 75 ? '#ffaa00' : '#ff3366';
+            });
+            subjectChart.update('none');
+        }
+
+        // ============================================================
+        // INTERACTION HANDLERS
+        // ============================================================
+
+        function toggleCalDate(key) {
+            const current = state.calendar[key] || null;
+            if (current === null) state.calendar[key] = 'absent';
+            else if (current === 'absent') state.calendar[key] = 'present';
+            else delete state.calendar[key];
+            renderCalendar();
+            renderCalendarProjection();
+        }
+
+        function changeMonth(dir) {
+            state.calendarMonth += dir;
+            if (state.calendarMonth > 11) { state.calendarMonth = 0; state.calendarYear++; }
+            if (state.calendarMonth < 0) { state.calendarMonth = 11; state.calendarYear--; }
+            renderCalendar();
+            renderCalendarProjection();
+        }
+
+        function simulate(type) {
+            const totalAttended = state.subjects.reduce((a, s) => a + s.attended, 0);
+            const totalClasses = state.subjects.reduce((a, s) => a + s.total, 0);
+            const currentOverall = getOverall();
+            let newAttended = totalAttended;
+            let newTotal = totalClasses;
+            let label = '';
+            let icon = '';
+
+            switch (type) {
+                case 'skip1':
+                    newTotal += 1;
+                    label = 'Skip 1 class tomorrow';
+                    icon = 'x-circle';
+                    break;
+                case 'attend1':
+                    newAttended += 1;
+                    newTotal += 1;
+                    label = 'Attend 1 class tomorrow';
+                    icon = 'check-circle';
+                    break;
+                case 'skip3':
+                    newTotal += 3;
+                    label = 'Skip 3 days of classes';
+                    icon = 'x-circle';
+                    break;
+                case 'attendWeek':
+                    // Roughly 5 classes per day, 5 days = 25, but let's use a realistic ~15
+                    newAttended += 15;
+                    newTotal += 15;
+                    label = 'Attend full week (15 classes)';
+                    icon = 'check-circle';
+                    break;
+            }
+
+            const newPct = newTotal > 0 ? (newAttended / newTotal) * 100 : 0;
+            const diff = newPct - currentOverall;
+            const isPositive = diff >= 0;
+            const color = isPositive ? 'var(--safe)' : 'var(--danger)';
+            const status = getStatus(newPct);
+
+            document.getElementById('simResult').innerHTML = `
+    <div class="flex items-center gap-2 mb-2">
+      <i data-lucide="${icon}" class="w-5 h-5" style="color: ${color};"></i>
+      <span class="text-sm font-semibold">${label}</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <div class="text-center">
+        <p class="text-xs" style="color:var(--muted);">Current</p>
+        <p class="text-lg font-bold" style="font-family:'Space Grotesk',sans-serif;">${currentOverall.toFixed(1)}%</p>
+      </div>
+      <i data-lucide="arrow-right" class="w-5 h-5" style="color: var(--muted);"></i>
+      <div class="text-center">
+        <p class="text-xs" style="color:var(--muted);">Projected</p>
+        <p class="text-lg font-bold" style="font-family:'Space Grotesk',sans-serif; color: ${color};">${newPct.toFixed(1)}%</p>
+      </div>
+      <span class="badge ${status.cls}">${status.label}</span>
+    </div>
+    <p class="text-xs mt-2" style="color: ${color};">${isPositive ? '+' : ''}${diff.toFixed(2)}% change</p>
+  `;
+            lucide.createIcons();
+        }
+
+        function toggleTimetable() {
+            const container = document.getElementById('ttContainer');
+            const text = document.getElementById('ttToggleText');
+            container.classList.toggle('open');
+            const isOpen = container.classList.contains('open');
+            text.textContent = isOpen ? 'Hide Timetable' : 'Show Timetable';
+        }
+
+        function openInputModal() {
+            const modal = document.getElementById('inputModal');
+            modal.classList.add('open');
+            // Pre-fill with first subject
+            const s = state.subjects[0];
+            document.getElementById('inputAttended').value = s.attended;
+            document.getElementById('inputTotal').value = s.total;
+            document.getElementById('inputPresent').value = s.studentsPresent;
+        }
+
+        function closeInputModal() {
+            document.getElementById('inputModal').classList.remove('open');
+        }
+
+        function submitInput(e) {
+            e.preventDefault();
+            const subjName = document.getElementById('inputSubject').value;
+            const attended = parseInt(document.getElementById('inputAttended').value);
+            const total = parseInt(document.getElementById('inputTotal').value);
+            const present = parseInt(document.getElementById('inputPresent').value) || null;
+
+            if (isNaN(attended) || isNaN(total) || attended < 0 || total < 0) {
+                showToast('Please enter valid numbers', 'error');
+                return;
+            }
+            if (attended > total) {
+                showToast('Attended cannot exceed total classes', 'error');
+                return;
+            }
+
+            const subj = state.subjects.find(s => s.name === subjName);
+            if (!subj) return;
+
+            subj.attended = attended;
+            subj.total = total;
+            if (present !== null && present >= 0) subj.studentsPresent = Math.min(present, subj.totalStudents);
+
+            closeInputModal();
+            renderAll();
+            showToast(`${subjName} attendance updated successfully`, 'success');
+        }
+
+        function openSubjectModal(index) {
+            const s = state.subjects[index];
+            const pct = getSubjectPct(s);
+            const color = pctColor(pct);
+            const status = getStatus(pct);
+            const bunks = safeBunks(s);
+            const bunks90 = safeBunks(s, 90);
+            const br = burnRate(s);
+            const rr = recoveryRate(s);
+            const to75 = classesToReach(s, 75);
+            const to90 = classesToReach(s, 90);
+            const buffer = Math.max(0, pct - MIN_THRESHOLD);
+
+            const circumference = 2 * Math.PI * 50;
+            const offset = circumference * (1 - Math.min(pct, 100) / 100);
+
+            document.getElementById('subjectModalContent').innerHTML = `
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="font-bold" style="font-family:'Space Grotesk',sans-serif;">${s.name}</h3>
+        <p class="text-xs" style="color: var(--muted);">${s.faculty} — ${s.type}</p>
+      </div>
+      <span class="badge ${status.cls}">${status.label}</span>
+    </div>
+    <div class="flex items-center gap-6 mb-5">
+      <div class="health-ring-container flex-shrink-0">
+        <svg width="120" height="120" class="circ-prog">
+          <circle class="circ-bg" cx="60" cy="60" r="50" stroke-width="8"/>
+          <circle class="circ-fill" cx="60" cy="60" r="50" stroke-width="8" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" style="stroke: ${color};"/>
+        </svg>
+        <div class="health-ring-label">
+          <span class="text-xl font-bold" style="font-family:'Space Grotesk',sans-serif; color: ${color};">${pct.toFixed(1)}</span>
+          <span class="text-xs block" style="color: var(--muted);">percent</span>
+        </div>
+      </div>
+      <div class="flex-1 space-y-2">
+        <div class="flex justify-between text-xs"><span style="color:var(--muted);">Attended</span><span class="font-bold">${s.attended}</span></div>
+        <div class="flex justify-between text-xs"><span style="color:var(--muted);">Total Classes</span><span class="font-bold">${s.total}</span></div>
+        <div class="flex justify-between text-xs"><span style="color:var(--muted);">Missed</span><span class="font-bold" style="color:var(--danger);">${s.total - s.attended}</span></div>
+        <div class="flex justify-between text-xs"><span style="color:var(--muted);">Students Present</span><span class="font-bold">${s.studentsPresent}/${s.totalStudents}</span></div>
+        <div class="flex justify-between text-xs"><span style="color:var(--muted);">Class Strength</span><span class="font-bold">${s.totalStudents > 0 ? (s.studentsPresent / s.totalStudents * 100).toFixed(0) : 0}%</span></div>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <div class="text-center p-3 rounded-xl" style="background: rgba(255,255,255,0.02);">
+        <p class="text-xs" style="color:var(--muted);">Safe Bunks</p>
+        <p class="text-lg font-bold" style="font-family:'Space Grotesk',sans-serif; color: ${bunks > 2 ? 'var(--safe)' : 'var(--danger)'};">${bunks}</p>
+        <p class="text-xs" style="color:var(--muted);">@ 75%</p>
+      </div>
+      <div class="text-center p-3 rounded-xl" style="background: rgba(255,255,255,0.02);">
+        <p class="text-xs" style="color:var(--muted);">Burn Rate</p>
+        <p class="text-lg font-bold" style="font-family:'Space Grotesk',sans-serif; color: var(--danger);">-${br.toFixed(2)}%</p>
+        <p class="text-xs" style="color:var(--muted);">per absence</p>
+      </div>
+      <div class="text-center p-3 rounded-xl" style="background: rgba(255,255,255,0.02);">
+        <p class="text-xs" style="color:var(--muted);">Recovery</p>
+        <p class="text-lg font-bold" style="font-family:'Space Grotesk',sans-serif; color: var(--safe);">+${rr.toFixed(2)}%</p>
+        <p class="text-xs" style="color:var(--muted);">per class</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <div class="p-3 rounded-xl" style="background: rgba(255,255,255,0.02);">
+        <p class="text-xs font-semibold" style="color:var(--muted);">To Reach 75%</p>
+        <p class="text-sm font-bold mt-1">${to75 === 0 ? 'Already achieved' : to75 + ' more classes needed'}</p>
+      </div>
+      <div class="p-3 rounded-xl" style="background: rgba(255,255,255,0.02);">
+        <p class="text-xs font-semibold" style="color:var(--muted);">To Reach 90%</p>
+        <p class="text-sm font-bold mt-1">${to90 === 0 ? 'Already achieved' : to90 === Infinity ? 'Cannot reach 90%' : to90 + ' more classes needed'}</p>
+      </div>
+    </div>
+    <div class="flex justify-between items-center p-3 rounded-xl" style="background: rgba(255,255,255,0.02);">
+      <span class="text-xs" style="color:var(--muted);">Buffer above 75% minimum</span>
+      <span class="text-sm font-bold" style="color: ${buffer > 10 ? 'var(--safe)' : 'var(--warning)'};">${buffer.toFixed(1)}%</span>
+    </div>
+    <button onclick="closeSubjectModal()" class="btn-secondary w-full mt-4">Close</button>
+  `;
+            document.getElementById('subjectModal').classList.add('open');
+        }
+
+        function closeSubjectModal() {
+            document.getElementById('subjectModal').classList.remove('open');
+        }
+
+        function submitLeave(e) {
+            e.preventDefault();
+            const from = document.getElementById('leaveFrom').value;
+            const to = document.getElementById('leaveTo').value;
+            const subject = document.getElementById('leaveSubject').value || 'All Subjects';
+            const reason = document.getElementById('leaveReason').value.trim();
+            const fileInput = document.getElementById('leaveFile');
+
+            if (!from || !to) { showToast('Please select date range', 'error'); return; }
+            if (new Date(from) > new Date(to)) { showToast('From date must be before To date', 'error'); return; }
+            if (!reason) { showToast('Please provide a reason', 'error'); return; }
+
+            state.leaves.unshift({
+                id: state.nextLeaveId++,
+                from, to, subject, reason,
+                status: 'pending',
+                file: fileInput.files.length > 0 ? fileInput.files[0].name : null
+            });
+
+            resetLeaveForm();
+            renderLeaveList();
+            showToast('Leave application submitted successfully', 'success');
+        }
+
+        function resetLeaveForm() {
+            document.getElementById('leaveForm').reset();
+            document.getElementById('fileLabel').textContent = 'Click to upload or drag a file';
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) document.getElementById('fileLabel').textContent = file.name;
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function closeMobileMenu() {
+            document.getElementById('mobileMenu').style.display = 'none';
+        }
+
+        // Toast system
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3500);
+        }
+
+        // ============================================================
+        // NAVIGATION HIGHLIGHT
+        // ============================================================
+        function setupNavHighlight() {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('[data-nav]');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => link.classList.remove('active'));
+                        const activeLink = document.querySelector(`[data-nav][href="#${entry.target.id}"]`);
+                        if (activeLink) activeLink.classList.add('active');
+                    }
+                });
+            }, { rootMargin: '-100px 0px -60% 0px', threshold: 0 });
+
+            sections.forEach(s => observer.observe(s));
+        }
+
+        // ============================================================
+        // REVEAL ON SCROLL
+        // ============================================================
+        function setupReveal() {
+            const items = document.querySelectorAll('.reveal-item');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('revealed');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+            items.forEach(item => observer.observe(item));
+        }
+
+        // Close modals on overlay click
+        document.getElementById('inputModal').addEventListener('click', function (e) {
+            if (e.target === this) closeInputModal();
+        });
+        document.getElementById('subjectModal').addEventListener('click', function (e) {
+            if (e.target === this) closeSubjectModal();
+        });
+
+        // Close modals on Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeInputModal();
+                closeSubjectModal();
+            }
+        });
+
+        // Subject input modal: update pre-fill when subject changes
+        document.getElementById('inputSubject').addEventListener('change', function () {
+            const s = state.subjects.find(sub => sub.name === this.value);
+            if (s) {
+                document.getElementById('inputAttended').value = s.attended;
+                document.getElementById('inputTotal').value = s.total;
+                document.getElementById('inputPresent').value = s.studentsPresent;
+            }
+        });
+
+        // ============================================================
+        // REAL-TIME TIMETABLE HIGHLIGHT UPDATE
+        // ============================================================
+        setInterval(() => {
+            renderTimetable();
+        }, 60000); // Update every minute
+
+        // ============================================================
+        // NOTIFICATION SYSTEM (periodic check)
+        // ============================================================
+        let lastNotified = '';
+        function checkNotifications() {
+            const overall = getOverall();
+            let msg = '';
+            if (overall < MIN_THRESHOLD && lastNotified !== 'danger') {
+                msg = `Your attendance has dropped below ${MIN_THRESHOLD}%. Attend classes immediately.`;
+                lastNotified = 'danger';
+            } else if (overall >= MIN_THRESHOLD && overall < GOOD_THRESHOLD + 2 && lastNotified !== 'warning') {
+                const to90 = state.subjects.reduce((a, s) => a + classesToReach(s, 90), 0);
+                if (to90 > 0 && to90 < 20) {
+                    msg = `You need ${to90} more attendances across subjects to reach 90%. Keep going!`;
+                    lastNotified = 'warning';
+                }
+            }
+            if (msg) showToast(msg, overall < MIN_THRESHOLD ? 'error' : 'info');
+        }
+        // Check once after 5 seconds
+        setTimeout(checkNotifications, 5000);
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function () {
+            renderAll();
+            initCharts();
+            setupNavHighlight();
+            setupReveal();
+            lucide.createIcons();
+
+            // Set default date for leave form
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('leaveFrom').value = today;
+            document.getElementById('leaveTo').value = today;
+        });
+    </script>
+</body>
+
+</html>
